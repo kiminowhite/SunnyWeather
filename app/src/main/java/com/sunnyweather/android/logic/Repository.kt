@@ -2,9 +2,11 @@ package com.sunnyweather.android.logic
 
 import androidx.lifecycle.liveData
 import com.sunnyweather.android.logic.model.Place
+import com.sunnyweather.android.logic.model.Weather
 import com.sunnyweather.android.logic.network.SunnyWeatherNetwork
 import kotlinx.coroutines.Dispatchers
-
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 
 object Repository {
@@ -20,6 +22,68 @@ object Repository {
             }
         } catch (e: Exception) {
             Result.failure<List<Place>>(e)
+        }
+        emit(result)
+    }
+    fun getRealtimeWeather(lng: String,lat: String)= liveData(Dispatchers.IO)
+    {
+        val result = try {
+            val realtimeResponse =SunnyWeatherNetwork.getRealtimeWeather(lng,lat)
+            if(realtimeResponse.status=="ok")
+            {
+
+                Result.success(realtimeResponse.result.realtime)
+            }
+
+        else {
+        Result.failure(RuntimeException("response status is${realtimeResponse.status}"))
+    }
+    } catch (e: Exception) {
+        Result.failure<Weather>(e)
+    }
+    emit(result)
+    }
+    fun getDailyWeather(lng: String,lat: String) = liveData(Dispatchers.IO) {
+        val result=try {
+            val dailyResponse = SunnyWeatherNetwork.getDailyWeather(lng,lat)
+            if(dailyResponse.status=="ok")
+            {
+                Result.success(dailyResponse.result.daily)
+            }
+            else
+            {
+                Result.failure(RuntimeException("response status is${dailyResponse.status}"))
+            }
+        }catch (e: Exception) {
+            Result.failure<Weather>(e)
+        }
+        emit(result)
+    }
+
+    fun refreshWeather(lng: String, lat: String) = liveData(Dispatchers.IO) {
+        val result = try {
+            coroutineScope {
+                val deferredRealtime = async {
+                    SunnyWeatherNetwork.getRealtimeWeather(lng, lat)
+                }
+                val deferredDaily = async {
+                    SunnyWeatherNetwork.getDailyWeather(lng, lat)
+                }
+                val realtimeResponse = deferredRealtime.await()
+                val dailyResponse = deferredDaily.await()
+                if (realtimeResponse.status == "ok" && dailyResponse.status == "ok") {
+                    val weather = Weather(realtimeResponse.result.realtime, dailyResponse.result.daily)
+                    Result.success(weather)
+                } else {
+                    Result.failure(
+                        RuntimeException(
+                            "realtime response status is ${realtimeResponse.status}" +
+                                    "daily response status is ${dailyResponse.status}"
+                        )
+                    ) }
+            }
+        } catch (e: Exception) {
+            Result.failure<Weather>(e)
         }
         emit(result)
     }
