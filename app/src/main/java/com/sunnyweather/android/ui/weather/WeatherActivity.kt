@@ -111,7 +111,7 @@ class WeatherActivity : AppCompatActivity() {
             skyInfo.text = sky.info
             val tempText = "${temperature.min.toInt()} ~ ${temperature.max.toInt()} °C"
             temperatureInfo.text = tempText
-                    forecastLayout.addView(view)
+            forecastLayout.addView(view)
         }
 // 填充life_index.xml布局中的数据
         val lifeIndex = daily.lifeIndex
