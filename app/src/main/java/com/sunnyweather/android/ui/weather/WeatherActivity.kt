@@ -16,7 +16,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.sunnyweather.android.R
+import com.sunnyweather.android.logic.Repository.refreshWeather
 import com.sunnyweather.android.logic.model.Weather
 import com.sunnyweather.android.logic.model.getSky
 import java.text.SimpleDateFormat
@@ -35,6 +37,7 @@ class WeatherActivity : AppCompatActivity() {
    lateinit var  ultravioletText:TextView
    lateinit var  carWashingText:TextView
    lateinit var weatherLayout: ScrollView
+   lateinit var swipeRefresh: SwipeRefreshLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -55,6 +58,7 @@ class WeatherActivity : AppCompatActivity() {
         ultravioletText=findViewById(R.id.ultravioletText)
         carWashingText=findViewById(R.id.carWashingText)
         weatherLayout=findViewById(R.id.weatherLayout)
+        swipeRefresh=findViewById(R.id.swipeRefresh)
 
         if (viewModel.locationLng.isEmpty()) {
             viewModel.locationLng = intent.getStringExtra("location_lng") ?: ""
@@ -75,11 +79,18 @@ class WeatherActivity : AppCompatActivity() {
                 Toast.makeText(this, "无法成功获取天气信息", Toast.LENGTH_SHORT).show()
                 result.exceptionOrNull()?.printStackTrace()
             }
+            swipeRefresh.isRefreshing = false
         })
+        swipeRefresh.setColorSchemeResources(R.color.purple_700)
+         refreshWeather()
 
-
+        swipeRefresh.setOnRefreshListener {
+            refreshWeather()
+        }
+    }
+    fun refreshWeather() {
         viewModel.refreshWeather(viewModel.locationLng, viewModel.locationLat)
-
+        swipeRefresh.isRefreshing = true
     }
     private fun showWeatherInfo(weather: Weather) {
         placeName.text = viewModel.placeName
